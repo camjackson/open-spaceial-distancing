@@ -10,49 +10,40 @@ pub struct Office {
 
 impl Office {
     pub fn new(width: usize, height: usize, p: f32) -> Office {
+        let number_of_occupied_desks = ((width * height) as f32 * p) as usize;
+        let occupied_indices = get_occupied_indices(width * height, number_of_occupied_desks);
+
         let mut desk_rows: Vec<Vec<Desk>> = Vec::with_capacity(height);
-        for _ in 0..height {
+        for row_index in 0..height {
             let mut row: Vec<Desk> = Vec::with_capacity(width);
-            for _ in 0..width {
-                row.push(Desk { is_occupied: false });
+            for col_index in 0..width {
+                let cell_number = row_index * width + col_index;
+                let is_occupied = occupied_indices.contains(&cell_number);
+                row.push(Desk { is_occupied });
             }
             desk_rows.push(row);
         }
 
-        let mut office = Office { desk_rows };
+        Office { desk_rows }
+    }
+}
 
-        let number_of_occupied_desks: u32 = ((width * height) as f32 * p) as u32;
-        for _ in 0..number_of_occupied_desks {
-            office.fill_a_desk_at_random();
-        }
-        office
+fn get_occupied_indices(total_count: usize, occupied_count: usize) -> Vec<usize> {
+    let mut list_of_all_indices: Vec<usize> = Vec::with_capacity(total_count);
+    let mut list_of_occupied_indices: Vec<usize> = Vec::with_capacity(occupied_count);
+    // Start with a list of all numbers from 0 to total_count
+    for i in 0..total_count {
+        list_of_all_indices.push(i);
     }
 
-    fn fill_a_desk_at_random(&mut self) {
-        let height = self.desk_rows.len();
-        let width = self.desk_rows.get(0).unwrap().len();
-        let mut rng = rand::thread_rng();
-
-        loop {
-            let row = rng.gen_range(0, height);
-            let col = rng.gen_range(0, width);
-
-            match self.try_to_fill_desk_at(row, col) {
-                Err(()) => (),
-                Ok(()) => break,
-            }
-        }
+    // Then randomly remove elements from that list and put them in the occupied list instead
+    let mut rng = rand::thread_rng();
+    for _ in 0..occupied_count {
+        let random_index = rng.gen_range(0, list_of_all_indices.len());
+        list_of_occupied_indices.push(list_of_all_indices.remove(random_index));
     }
 
-    fn try_to_fill_desk_at(&mut self, row: usize, col: usize) -> Result<(), ()> {
-        let desk = self.desk_rows.get_mut(row).unwrap().get_mut(col).unwrap();
-        if desk.is_occupied {
-            Err(())
-        } else {
-            desk.is_occupied = true;
-            Ok(())
-        }
-    }
+    list_of_occupied_indices
 }
 
 #[cfg(test)]
@@ -60,6 +51,7 @@ mod tests {
     use super::*;
 
     fn get_number_of_occupied_desks(office: &Office) -> u32 {
+        // Test util function
         let mut count = 0;
 
         for row in &office.desk_rows {
@@ -92,34 +84,15 @@ mod tests {
     }
 
     #[test]
-    fn it_can_create_a_half_full_office() {
-        let office = Office::new(3, 4, 0.5);
+    fn it_can_create_offices_of_varying_occupancy() {
+        let mut office;
+        office = Office::new(3, 4, 0.5);
         assert_eq!(get_number_of_occupied_desks(&office), 6);
-    }
 
-    #[test]
-    fn it_can_fill_the_only_desk() {
-        let mut office = Office::new(1, 1, 0.0);
+        office = Office::new(10, 10, 0.9);
+        assert_eq!(get_number_of_occupied_desks(&office), 90);
 
-        assert_eq!(get_number_of_occupied_desks(&office), 0);
-
-        office.fill_a_desk_at_random();
-
-        assert_eq!(get_number_of_occupied_desks(&office), 1);
-    }
-
-    #[test]
-    fn it_can_fill_all_the_desks_one_by_one() {
-        let width = 10;
-        let height = 10;
-        let mut office = Office::new(10, 10, 0.0);
-
-        assert_eq!(get_number_of_occupied_desks(&office), 0);
-
-        for _ in 0..(width * height) {
-            office.fill_a_desk_at_random();
-        }
-
-        assert_eq!(get_number_of_occupied_desks(&office), width * height);
+        office = Office::new(100, 50, 0.6);
+        assert_eq!(get_number_of_occupied_desks(&office), 3000);
     }
 }
