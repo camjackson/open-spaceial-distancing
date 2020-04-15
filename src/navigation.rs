@@ -4,8 +4,8 @@ use std::convert::TryInto;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Location {
-    row: usize,
-    col: usize,
+    pub row: usize,
+    pub col: usize,
 }
 
 pub type Path = Vec<(Location, Direction)>;
@@ -25,15 +25,15 @@ impl Navigator for WallHuggingNavigator {
         let mut current_direction: Direction = Direction::Left;
         let mut path_so_far: Path = Vec::new();
         loop {
-            if current_location.row == 0 {
-                // We made it out!
-                return Ok(path_so_far);
-            }
             if path_so_far.contains(&(current_location, current_direction)) {
                 // We're in a loop
                 return Err(path_so_far);
             }
             path_so_far.push((current_location, current_direction));
+            if current_location.row == 0 {
+                // We made it out!
+                return Ok(path_so_far);
+            }
             let (next_location, next_direction) =
                 get_next_location_and_direction(&current_location, current_direction, &office);
             current_location = next_location;
@@ -124,27 +124,7 @@ fn step(current_row: i32, current_col: i32, direction: Direction) -> (i32, i32) 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::office::Desk;
-    fn office_from_string(input: String) -> Office {
-        let rows = input.split_whitespace();
-
-        let desk_rows: Vec<Vec<Desk>> = rows
-            .map(|row_text| {
-                row_text
-                    .chars()
-                    .map(|character| {
-                        let is_occupied = match character {
-                            '0' => false,
-                            'x' => true,
-                            _ => panic!("Oh no!"),
-                        };
-                        Desk { is_occupied }
-                    })
-                    .collect()
-            })
-            .collect();
-        Office { desk_rows }
-    }
+    use crate::office::office_from_string;
     #[test]
     fn it_can_navigating_all_these_offices() {
         let test_cases = [

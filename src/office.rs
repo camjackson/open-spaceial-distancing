@@ -38,15 +38,21 @@ impl Office {
     }
 }
 
+impl fmt::Display for Desk {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.is_occupied {
+            write!(f, "x")
+        } else {
+            write!(f, "0")
+        }
+    }
+}
+
 impl fmt::Display for Office {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for row in &self.desk_rows {
             for desk in row {
-                if desk.is_occupied {
-                    write!(f, "x")?;
-                } else {
-                    write!(f, "0")?;
-                }
+                desk.fmt(f)?;
             }
             writeln!(f)?;
         }
@@ -70,6 +76,28 @@ fn get_occupied_indices(total_count: usize, occupied_count: usize) -> Vec<usize>
     }
 
     list_of_occupied_indices
+}
+
+#[allow(dead_code)] // This isn't really dead, it's a util for tests
+pub fn office_from_string(input: String) -> Office {
+    let rows = input.split_whitespace();
+
+    let desk_rows: Vec<Vec<Desk>> = rows
+        .map(|row_text| {
+            row_text
+                .chars()
+                .map(|character| {
+                    let is_occupied = match character {
+                        '0' => false,
+                        'x' => true,
+                        _ => panic!("Oh no!"),
+                    };
+                    Desk { is_occupied }
+                })
+                .collect()
+        })
+        .collect();
+    Office { desk_rows }
 }
 
 #[cfg(test)]

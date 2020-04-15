@@ -1,11 +1,13 @@
 use crate::navigation::Navigator;
 use crate::office::Office;
+use crate::show_path::show_path;
 use rand::Rng;
 
 pub struct SimulationParams {
     pub sample_count: u32,
     pub office_width: usize,
     pub office_height: usize,
+    pub print_path: bool,
 }
 
 pub fn safe_pct_for_p<N: Navigator>(p: f32, params: &SimulationParams, navigator: &mut N) -> f32 {
@@ -15,8 +17,18 @@ pub fn safe_pct_for_p<N: Navigator>(p: f32, params: &SimulationParams, navigator
         let office = Office::new(params.office_width, params.office_width, p);
         let start_column = rng.gen_range(0, params.office_width);
 
-        if navigator.try_to_escape(&office, start_column).is_ok() {
+        let escape_result = navigator.try_to_escape(&office, start_column);
+
+        if escape_result.is_ok() {
             safe_offices += 1
+        }
+
+        if params.print_path {
+            match escape_result {
+                Ok(path) => println!("{}", show_path(&office, &path)),
+                Err(path) => println!("{}", show_path(&office, &path)),
+            };
+            println!();
         }
     }
     safe_offices as f32 / params.sample_count as f32 * 100.0
@@ -64,6 +76,7 @@ mod tests {
             sample_count: 100,
             office_width: 10,
             office_height: 10,
+            print_path: false,
         };
         let mut always_succeed_nav = FakeNavigator::new(vec![Err(())]);
         // p is irrelevant here, it's the navigator stub that matters
@@ -77,6 +90,7 @@ mod tests {
             sample_count: 100,
             office_width: 10,
             office_height: 10,
+            print_path: false,
         };
         let mut always_fail_nav = FakeNavigator::new(vec![Ok(())]);
         // p is irrelevant here, it's the navigator stub that matters
@@ -90,6 +104,7 @@ mod tests {
             sample_count: 99,
             office_width: 10,
             office_height: 10,
+            print_path: false,
         };
         // p is irrelevant here, it's the navigator stub that matters
         let mut mostly_succeed_nav = FakeNavigator::new(vec![Ok(()), Err(()), Ok(())]);

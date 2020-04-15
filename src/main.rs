@@ -1,6 +1,7 @@
 mod direction;
 mod navigation;
 mod office;
+mod show_path;
 mod stats;
 
 use navigation::WallHuggingNavigator;
@@ -11,6 +12,7 @@ fn main() {
         sample_count: 10_000,
         office_width: 10,
         office_height: 10,
+        print_path: false,
     };
     let mut nav = WallHuggingNavigator {};
 
