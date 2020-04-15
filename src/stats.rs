@@ -1,4 +1,4 @@
-use crate::navigation::can_navigate_to_safety;
+use crate::navigation::try_to_escape;
 use crate::office::Office;
 use rand::Rng;
 
@@ -15,8 +15,8 @@ pub fn safe_percentage_for_p(p: f32, params: &SimulationParams) -> f32 {
         let office = Office::new(params.office_width, params.office_width, p);
         let start_column = rng.gen_range(0, params.office_width);
 
-        if can_navigate_to_safety(office, start_column) {
-            safe_offices += 1;
+        if try_to_escape(&office, start_column).is_ok() {
+            safe_offices += 1
         }
     }
     safe_offices as f32 / params.sample_count as f32 * 100.0

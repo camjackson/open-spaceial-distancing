@@ -2,30 +2,32 @@ use crate::direction::Direction;
 use crate::office::Office;
 use std::convert::TryInto;
 
-#[derive(PartialEq, Copy, Clone)]
-struct Location {
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub struct Location {
     row: usize,
     col: usize,
 }
 
-pub fn can_navigate_to_safety(office: Office, start_column: usize) -> bool {
+type Path = Vec<(Location, Direction)>;
+
+pub fn try_to_escape(office: &Office, start_column: usize) -> Result<Path, Path> {
     let mut current_location: Location = Location {
-        row: office.desk_rows.len(),
+        row: office.desk_rows.len() - 1,
         col: start_column,
     };
     let mut current_direction: Direction = Direction::Left;
-    let mut visited_location_and_directions: Vec<(Location, Direction)> = Vec::new();
+    let mut path_so_far: Path = Vec::new();
 
     loop {
         if current_location.row == 0 {
             // We made it out!
-            return true;
+            return Ok(path_so_far);
         }
-        if visited_location_and_directions.contains(&(current_location, current_direction)) {
+        if path_so_far.contains(&(current_location, current_direction)) {
             // We're in a loop
-            return false;
+            return Err(path_so_far);
         }
-        visited_location_and_directions.push((current_location, current_direction));
+        path_so_far.push((current_location, current_direction));
 
         let (next_location, next_direction) =
             get_next_location_and_direction(&current_location, current_direction, &office);
@@ -164,6 +166,13 @@ xxx0x
             ),
             (
                 "\
+00000
+00000
+0xx00",
+                1,
+            ),
+            (
+                "\
 xx0000000
 000xxx000
 0x000x000
@@ -175,7 +184,7 @@ xx0000000
 
         for (office_str, start_col) in test_cases.iter() {
             let office = office_from_string((*office_str).to_string());
-            assert_eq!(can_navigate_to_safety(office, *start_col), true);
+            assert!(try_to_escape(&office, *start_col).is_ok());
         }
     }
 
@@ -213,7 +222,7 @@ x000x",
         ];
         for (office_str, start_col) in test_cases.iter() {
             let office = office_from_string((*office_str).to_string());
-            assert_eq!(can_navigate_to_safety(office, *start_col), false);
+            assert!(!try_to_escape(&office, *start_col).is_ok());
         }
     }
 }
