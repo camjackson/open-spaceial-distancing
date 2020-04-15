@@ -1,4 +1,5 @@
 use rand::Rng;
+use std::fmt;
 
 pub struct Desk {
     pub is_occupied: bool,
@@ -35,18 +36,21 @@ impl Office {
             .unwrap()
             .is_occupied
     }
+}
 
-    pub fn to_string(&self) -> String {
-        self.desk_rows
-            .iter()
-            .map(|row| {
-                row.iter()
-                    .map(|desk| if desk.is_occupied { "x" } else { "0" })
-                    .collect::<Vec<&str>>()
-                    .join("")
-            })
-            .collect::<Vec<String>>()
-            .join("\n")
+impl fmt::Display for Office {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for row in &self.desk_rows {
+            for desk in row {
+                if desk.is_occupied {
+                    write!(f, "x")?;
+                } else {
+                    write!(f, "0")?;
+                }
+            }
+            writeln!(f)?;
+        }
+        Ok(())
     }
 }
 
@@ -143,7 +147,8 @@ mod tests {
             "\
 00x
 x0x
-0x0"
+0x0
+"
         );
     }
 }
