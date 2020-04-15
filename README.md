@@ -42,6 +42,7 @@ Number of samples for each p: 10000
     - Lots of functions that are just data-in/data-out, which is easy to test
     - Only trickier part was `stats.rs`, because it calculates a single number that depends on a lot of random input
         - The solution was to make a trait (interface) for the maze-solver, and then manually implement a stub that can be forced to succeed/fail
+- No libraries, except for the standard `rand` crate which I don't think counts
 
 ## Bonus feature
 
