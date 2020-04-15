@@ -8,32 +8,37 @@ pub struct Location {
     col: usize,
 }
 
-type Path = Vec<(Location, Direction)>;
+pub type Path = Vec<(Location, Direction)>;
 
-pub fn try_to_escape(office: &Office, start_column: usize) -> Result<Path, Path> {
-    let mut current_location: Location = Location {
-        row: office.desk_rows.len() - 1,
-        col: start_column,
-    };
-    let mut current_direction: Direction = Direction::Left;
-    let mut path_so_far: Path = Vec::new();
+pub trait Navigator {
+    fn try_to_escape(&mut self, office: &Office, start_column: usize) -> Result<Path, Path>;
+}
 
-    loop {
-        if current_location.row == 0 {
-            // We made it out!
-            return Ok(path_so_far);
+pub struct WallHuggingNavigator {}
+
+impl Navigator for WallHuggingNavigator {
+    fn try_to_escape(&mut self, office: &Office, start_column: usize) -> Result<Path, Path> {
+        let mut current_location: Location = Location {
+            row: office.desk_rows.len() - 1,
+            col: start_column,
+        };
+        let mut current_direction: Direction = Direction::Left;
+        let mut path_so_far: Path = Vec::new();
+        loop {
+            if current_location.row == 0 {
+                // We made it out!
+                return Ok(path_so_far);
+            }
+            if path_so_far.contains(&(current_location, current_direction)) {
+                // We're in a loop
+                return Err(path_so_far);
+            }
+            path_so_far.push((current_location, current_direction));
+            let (next_location, next_direction) =
+                get_next_location_and_direction(&current_location, current_direction, &office);
+            current_location = next_location;
+            current_direction = next_direction;
         }
-        if path_so_far.contains(&(current_location, current_direction)) {
-            // We're in a loop
-            return Err(path_so_far);
-        }
-        path_so_far.push((current_location, current_direction));
-
-        let (next_location, next_direction) =
-            get_next_location_and_direction(&current_location, current_direction, &office);
-
-        current_location = next_location;
-        current_direction = next_direction;
     }
 }
 
@@ -182,9 +187,11 @@ xx0000000
             ),
         ];
 
+        let mut navigator = WallHuggingNavigator {};
+
         for (office_str, start_col) in test_cases.iter() {
             let office = office_from_string((*office_str).to_string());
-            assert!(try_to_escape(&office, *start_col).is_ok());
+            assert!(navigator.try_to_escape(&office, *start_col).is_ok());
         }
     }
 
@@ -220,9 +227,12 @@ x000x",
                 2,
             ),
         ];
+
+        let mut navigator = WallHuggingNavigator {};
+
         for (office_str, start_col) in test_cases.iter() {
             let office = office_from_string((*office_str).to_string());
-            assert!(!try_to_escape(&office, *start_col).is_ok());
+            assert!(!navigator.try_to_escape(&office, *start_col).is_ok());
         }
     }
 }
