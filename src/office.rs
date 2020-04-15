@@ -26,6 +26,28 @@ impl Office {
 
         Office { desk_rows }
     }
+
+    pub fn desk_is_occupied(&self, row: usize, col: usize) -> bool {
+        self.desk_rows
+            .get(row)
+            .unwrap()
+            .get(col)
+            .unwrap()
+            .is_occupied
+    }
+
+    pub fn to_string(&self) -> String {
+        self.desk_rows
+            .iter()
+            .map(|row| {
+                row.iter()
+                    .map(|desk| if desk.is_occupied { "x" } else { "0" })
+                    .collect::<Vec<&str>>()
+                    .join("")
+            })
+            .collect::<Vec<String>>()
+            .join("\n")
+    }
 }
 
 fn get_occupied_indices(total_count: usize, occupied_count: usize) -> Vec<usize> {
@@ -94,5 +116,34 @@ mod tests {
 
         office = Office::new(100, 50, 0.6);
         assert_eq!(get_number_of_occupied_desks(&office), 3000);
+    }
+    #[test]
+    fn it_can_format_itself() {
+        let desk_rows = vec![
+            vec![
+                Desk { is_occupied: false },
+                Desk { is_occupied: false },
+                Desk { is_occupied: true },
+            ],
+            vec![
+                Desk { is_occupied: true },
+                Desk { is_occupied: false },
+                Desk { is_occupied: true },
+            ],
+            vec![
+                Desk { is_occupied: false },
+                Desk { is_occupied: true },
+                Desk { is_occupied: false },
+            ],
+        ];
+        let office = Office { desk_rows };
+
+        assert_eq!(
+            office.to_string(),
+            "\
+00x
+x0x
+0x0"
+        );
     }
 }
