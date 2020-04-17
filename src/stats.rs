@@ -10,28 +10,40 @@ pub struct SimulationParams {
     pub print_path: bool,
 }
 
-pub fn safe_pct_for_p<N: Navigator>(p: f32, params: &SimulationParams, navigator: &mut N) -> f32 {
+pub struct Stats {
+    pub safe_percentage: f32,
+    pub average_path_length: f32,
+}
+
+pub fn stats_for_p<N: Navigator>(p: f32, params: &SimulationParams, navigator: &mut N) -> Stats {
     let mut rng = rand::thread_rng();
-    let mut safe_offices = 0;
+    let mut safe_offices_count = 0;
+    let mut cumulative_successful_path_length = 0;
     for _ in 0..params.sample_count {
         let office = Office::new(params.office_width, params.office_width, p);
         let start_column = rng.gen_range(0, params.office_width);
 
         let escape_result = navigator.try_to_escape(&office, start_column);
 
-        if escape_result.is_ok() {
-            safe_offices += 1
-        }
-
+        let path = match escape_result {
+            Ok(path) => {
+                safe_offices_count += 1;
+                cumulative_successful_path_length += path.len();
+                path
+            }
+            Err(path) => path,
+        };
         if params.print_path {
-            match escape_result {
-                Ok(path) => println!("{}", show_path(&office, &path)),
-                Err(path) => println!("{}", show_path(&office, &path)),
-            };
+            println!("{}", show_path(&office, &path));
             println!();
         }
     }
-    safe_offices as f32 / params.sample_count as f32 * 100.0
+    let safe_percentage = safe_offices_count as f32 / params.sample_count as f32 * 100.0;
+    let average_path_length = cumulative_successful_path_length as f32 / safe_offices_count as f32;
+    Stats {
+        safe_percentage,
+        average_path_length,
+    }
 }
 
 #[cfg(test)]
@@ -80,8 +92,8 @@ mod tests {
         };
         let mut always_succeed_nav = FakeNavigator::new(vec![Err(())]);
         // p is irrelevant here, it's the navigator stub that matters
-        let safe_pct = safe_pct_for_p(1.0, &params, &mut always_succeed_nav);
-        assert!(floats_close(safe_pct, 0.0));
+        let stats = stats_for_p(1.0, &params, &mut always_succeed_nav);
+        assert!(floats_close(stats.safe_percentage, 0.0));
     }
 
     #[test]
@@ -94,8 +106,8 @@ mod tests {
         };
         let mut always_fail_nav = FakeNavigator::new(vec![Ok(())]);
         // p is irrelevant here, it's the navigator stub that matters
-        let safe_pct = safe_pct_for_p(0.0, &params, &mut always_fail_nav);
-        assert!(floats_close(safe_pct, 100.0));
+        let stats = stats_for_p(0.0, &params, &mut always_fail_nav);
+        assert!(floats_close(stats.safe_percentage, 100.0));
     }
 
     #[test]
@@ -108,7 +120,7 @@ mod tests {
         };
         // p is irrelevant here, it's the navigator stub that matters
         let mut mostly_succeed_nav = FakeNavigator::new(vec![Ok(()), Err(()), Ok(())]);
-        let safe_pct = safe_pct_for_p(0.0, &params, &mut mostly_succeed_nav);
-        assert!(floats_close(safe_pct, 66.66));
+        let stats = stats_for_p(0.0, &params, &mut mostly_succeed_nav);
+        assert!(floats_close(stats.safe_percentage, 66.66));
     }
 }
