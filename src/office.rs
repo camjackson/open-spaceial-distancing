@@ -1,6 +1,8 @@
-use rand::Rng;
+use rand::seq::SliceRandom;
 use std::fmt;
+use std::iter;
 
+#[derive(Clone)]
 pub struct Desk {
     pub is_occupied: bool,
 }
@@ -11,30 +13,33 @@ pub struct Office {
 
 impl Office {
     pub fn new(width: usize, height: usize, p: f32) -> Office {
+        let mut rng = rand::thread_rng();
         let number_of_occupied_desks = ((width * height) as f32 * p) as usize;
-        let occupied_indices = get_occupied_indices(width * height, number_of_occupied_desks);
 
-        let mut desk_rows: Vec<Vec<Desk>> = Vec::with_capacity(height);
-        for row_index in 0..height {
-            let mut row: Vec<Desk> = Vec::with_capacity(width);
-            for col_index in 0..width {
-                let cell_number = row_index * width + col_index;
-                let is_occupied = occupied_indices.contains(&cell_number);
-                row.push(Desk { is_occupied });
-            }
-            desk_rows.push(row);
-        }
+        let occupied_desks: Vec<Desk> = iter::repeat(Desk { is_occupied: true })
+            .take(number_of_occupied_desks)
+            .collect();
+        let unoccupied_desks: Vec<Desk> = iter::repeat(Desk { is_occupied: false })
+            .take(width * height - number_of_occupied_desks)
+            .collect();
+        let mut desk_array = [occupied_desks, unoccupied_desks].concat();
+        desk_array.shuffle(&mut rng);
+
+        let desk_rows: Vec<Vec<Desk>> = desk_array
+            .chunks(width)
+            .map(|chunk| chunk.to_vec())
+            .collect();
 
         Office { desk_rows }
     }
 
     pub fn desk_is_occupied(&self, row: usize, col: usize) -> bool {
-        self.desk_rows
-            .get(row)
-            .unwrap()
-            .get(col)
-            .unwrap()
-            .is_occupied
+        unsafe {
+            self.desk_rows
+                .get_unchecked(row)
+                .get_unchecked(col)
+                .is_occupied
+        }
     }
 }
 
@@ -58,24 +63,6 @@ impl fmt::Display for Office {
         }
         Ok(())
     }
-}
-
-fn get_occupied_indices(total_count: usize, occupied_count: usize) -> Vec<usize> {
-    let mut list_of_all_indices: Vec<usize> = Vec::with_capacity(total_count);
-    let mut list_of_occupied_indices: Vec<usize> = Vec::with_capacity(occupied_count);
-    // Start with a list of all numbers from 0 to total_count
-    for i in 0..total_count {
-        list_of_all_indices.push(i);
-    }
-
-    // Then randomly remove elements from that list and put them in the occupied list instead
-    let mut rng = rand::thread_rng();
-    for _ in 0..occupied_count {
-        let random_index = rng.gen_range(0, list_of_all_indices.len());
-        list_of_occupied_indices.push(list_of_all_indices.remove(random_index));
-    }
-
-    list_of_occupied_indices
 }
 
 #[allow(dead_code)] // This isn't really dead, it's a util for tests
